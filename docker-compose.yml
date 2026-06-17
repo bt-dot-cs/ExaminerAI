@@ -1,0 +1,35 @@
+services:
+  aerospike:
+    image: aerospike/aerospike-server:7.1.0.0
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+      - "3002:3002"
+    volumes:
+      - ./aerospike.conf:/etc/aerospike/aerospike.conf
+      - aerospike-data:/opt/aerospike/data
+    healthcheck:
+      test: ["CMD", "asinfo", "-v", "status"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ghostdb
+      POSTGRES_USER: ghost
+      POSTGRES_PASSWORD: ghost
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ghost -d ghostdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  aerospike-data:
+  postgres-data:
