@@ -54,7 +54,7 @@ Full system diagram: [architecture.md](architecture.md)
 | Backend | FastAPI + Python 3.11+ |
 | Frontend | React + TypeScript + Vite |
 | Hot memory | Aerospike (EPHEMERAL / SESSION / LONGITUDINAL tiers) |
-| Durable audit store | Ghost DB |
+| Durable audit store | Ghost DB (PostgreSQL) |
 | Memory compiler | Synix |
 | Observability | Overmind SDK + MLflow |
 | Live data | FRED API (rates), BLS API (unemployment) |
@@ -65,10 +65,11 @@ Full system diagram: [architecture.md](architecture.md)
 
 ### Prerequisites
 
+- Docker and Docker Compose
 - Python 3.11+
 - Node.js 18+
-- Aerospike running locally (default: `localhost:3000`, namespace `test`) — see [aerospike.conf](aerospike.conf)
-- Ghost DB instance (optional; startup skips gracefully if unreachable)
+- [Anthropic API key](https://console.anthropic.com/)
+- [FRED API key](https://fred.stlouisfed.org/docs/api/api_key.html) (free registration)
 
 ### 1. Clone
 
@@ -77,14 +78,24 @@ git clone https://github.com/bt-dot-cs/ExaminerAI.git
 cd ExaminerAI
 ```
 
-### 2. Environment variables
+### 2. Start infrastructure
+
+```bash
+docker-compose up -d
+```
+
+This starts Aerospike on port 3000 and PostgreSQL on port 5432. Wait ~10 seconds for both to be ready (or `docker-compose ps` to check health).
+
+### 3. Environment variables
 
 ```bash
 cp .env.example backend/.env
-# fill in your keys
+# open backend/.env and fill in ANTHROPIC_API_KEY and FRED_API_KEY
 ```
 
-### 3. Backend
+The `GHOST_DB_URL` default in `.env.example` matches the docker-compose postgres service — no changes needed unless you're pointing at your own instance.
+
+### 4. Backend
 
 ```bash
 cd backend
@@ -98,7 +109,9 @@ pip install -r requirements.txt
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### 4. Frontend
+> **Note on the Aerospike Python client:** `aerospike==15.1.0` requires native C extensions. On macOS you may need `brew install openssl` first. On Apple Silicon, if the pip install fails, try `pip install aerospike --no-binary aerospike`.
+
+### 5. Frontend
 
 ```bash
 cd frontend
@@ -117,7 +130,7 @@ See [.env.example](.env.example) for the full list.
 | `ANTHROPIC_API_KEY` | Yes | Claude API key |
 | `FRED_API_KEY` | Yes | FRED (Federal Reserve) API key — [register free](https://fred.stlouisfed.org/docs/api/api_key.html) |
 | `BLS_API_KEY` | No | BLS unemployment data — public endpoint works without a key; registration raises rate limits |
-| `GHOST_DB_URL` | No | Ghost DB connection URL — audit log skipped gracefully if unset |
+| `GHOST_DB_URL` | No | PostgreSQL connection URL — defaults to the docker-compose postgres service |
 | `OVERMIND_API_KEY` | No | Overmind observability — tracing skipped if unset |
 | `AEROSPIKE_HOST` | No | Default: `localhost` |
 | `AEROSPIKE_PORT` | No | Default: `3000` |
@@ -129,6 +142,8 @@ See [.env.example](.env.example) for the full list.
 
 ```
 ExaminerAI/
+├── docker-compose.yml              # Aerospike + PostgreSQL
+├── aerospike.conf                  # Aerospike config (mounted by docker-compose)
 ├── backend/
 │   ├── agent/
 │   │   ├── compliance_agent.py     # core pipeline
@@ -150,8 +165,7 @@ ExaminerAI/
 │       ├── App.tsx
 │       ├── api.ts
 │       └── components/
-├── architecture.md                 # full system diagram
-└── aerospike.conf                  # local Aerospike config
+└── architecture.md                 # full system diagram
 ```
 
 ---
