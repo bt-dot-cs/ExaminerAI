@@ -65,7 +65,7 @@ Full system diagram: [architecture.md](architecture.md)
 
 ### Prerequisites
 
-- Docker and Docker Compose
+- **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** (Mac/Windows/Linux) — runs Aerospike and PostgreSQL; no separate installs needed
 - Python 3.11+
 - Node.js 18+
 - [Anthropic API key](https://console.anthropic.com/)
@@ -80,11 +80,13 @@ cd ExaminerAI
 
 ### 2. Start infrastructure
 
+Make sure Docker Desktop is running, then:
+
 ```bash
 docker-compose up -d
 ```
 
-This starts Aerospike on port 3000 and PostgreSQL on port 5432. Wait ~10 seconds for both to be ready (or `docker-compose ps` to check health).
+This pulls and starts Aerospike (port 3000) and PostgreSQL (port 5432). First run downloads the images (~200MB). Check readiness with `docker-compose ps` — both services should show `(healthy)` before proceeding.
 
 ### 3. Environment variables
 
